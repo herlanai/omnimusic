@@ -1,0 +1,11 @@
+{
+  "name": "OmniMusic",
+  "identifier": "app.omnimusic.desktop",
+  "version": "0.1.46",
+  "icon": "assets/icon.png",
+  "out": "build",
+  "i18n": {
+    "dir": "locales",
+    "source": "zh-Hans"
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "recentPlays": "最近播放",
+  "recentHint": "听过的曲库歌曲和 YouTube 音乐会出现在这里。",
+  "removeLocal": "从曲库移除《{title}》",
+  "toggleGlass": "切换液态玻璃效果",
+  "frostedGlass": "液态玻璃效果",
+  "miniPlayer": "小窗播放",
+  "closeMini": "关闭小窗",
+  "videoLink": "粘贴 YouTube 或 YouTube Music 歌曲链接",
+  "invalidVideo": "请输入有效的 YouTube 歌曲或视频链接。",
+  "videoControls": "在播放页中使用 YouTube 播放控件。",
+  "videoPlayer": "打开 YouTube 播放器",
+
+  "settings": "设置",
+  "appearance": "外观",
+  "done": "完成",
+
+  "@@locale": "zh-Hans",
+  "daily": "每日精选",
+  "allMusic": "全部音乐",
+  "localMusic": "本地音乐",
+  "favorites": "我的收藏",
+  "pop": "现代流行",
+  "piano": "钢琴",
+  "instrumental": "纯音乐",
+  "indiePop": "独立流行",
+  "electroPop": "电子流行",
+  "orchestra": "管弦乐",
+  "chamber": "室内乐",
+  "localFile": "本地文件",
+  "discover": "发现",
+  "library": "我的音乐",
+  "categories": "分类推荐",
+  "importMusic": "＋  导入音乐",
+  "importDialog": "导入本地音乐",
+  "music": "音乐",
+  "search": "搜索当前曲单",
+  "warmTone": "音色 · 温润",
+  "originalTone": "音色 · 原声",
+  "changeTone": "切换原声与温润音色",
+  "light": "浅色",
+  "dark": "深色",
+  "changeTheme": "切换至{theme}模式",
+  "language": "语言",
+  "followSystem": "跟随系统",
+  "dateLabel": "{day, date, ::yMMMd}",
+  "playMix": "▶   播放曲单",
+  "refresh": "换一批",
+  "refreshHint": "重新推荐 12 首音乐",
+  "trackCount": "{count, plural, other {# 首}}",
+  "noMatches": "暂无匹配曲目",
+  "importHint": "导入 FLAC、WAV、MP3 或 Ogg 文件",
+  "likeHint": "点击播放栏的爱心收藏音乐",
+  "recordRoom": "唱片室",
+  "mixEvidence": "每日精选依据",
+  "focus": "本批侧重 · {genre}",
+  "evidence": "{stories} 篇 HN 讨论 · {mentions} 条相关发言",
+  "exampleStory": "示例讨论 · {score} 分 · {comments} 条评论",
+  "openStory": "查看讨论 ↗",
+  "musopen": "Musopen · 公共领域 ↗",
+  "license": "专辑与授权 ↗",
+  "lyrics": "歌词",
+  "back": "返回曲单",
+  "awaitVocals": "等待演唱",
+  "showLyrics": "查看完整歌词",
+  "fullLyrics": "可查看完整歌词",
+  "localLyrics": "可读取同名 .lrc 歌词",
+  "lyricsOnPlay": "播放后载入歌词",
+  "findingLyrics": "正在查找歌词…",
+  "noLyrics": "暂未收录这首歌的歌词",
+  "lyricsOffline": "歌词服务暂时无法连接",
+  "lyricsUnavailable": "歌词服务暂时不可用",
+  "syncedLyrics": "同步歌词 · LRCLIB",
+  "plainLyrics": "歌词 · LRCLIB",
+  "like": "收藏当前曲目",
+  "previous": "上一首",
+  "play": "播放",
+  "pause": "暂停",
+  "cancelLoad": "取消载入",
+  "next": "下一首",
+  "seek": "播放进度",
+  "volume": "音量",
+  "loading": "正在载入音频…",
+  "loadingProgress": "载入 {format} · {percent}%",
+  "saveFailure": "资料库保存失败：{detail}",
+  "playFailure": "播放失败：{detail}",
+  "sourceStatus": "曲源响应 {code}",
+  "lengthMismatch": "音频长度不匹配",
+  "checksum": "音频完整性校验失败，请重试",
+  "invalidSeek": "无效的跳转方式",
+  "invalidOffset": "音频偏移量越界",
+  "@evidence": {
+    "placeholders": {
+      "stories": {
+        "type": "int"
+      },
+      "mentions": {
+        "type": "int"
+      }
+    }
+  },
+  "@exampleStory": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "comments": {
+        "type": "int"
+      }
+    }
+  },
+  "@loadingProgress": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "@sourceStatus": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "openPlayer": "打开播放页",
+  "hnComments": "HN 评论",
+  "readComments": "查看评论",
+  "noComments": "这段讨论暂无已收录的评论。",
+  "moreComments": "更多评论",
+  "nowPlaying": "正在播放"
+}
