@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/HyperparameterSI/golet/backend/i18n"
 	"math"
-	"sort"
 	"strings"
 	"time"
 )
@@ -49,9 +48,9 @@ func (s *studio) daily(now time.Time) {
 	if date == s.date && lang == s.mixLanguage {
 		return
 	}
+	s.recommendationTime = now
 	s.mixLanguage = lang
 	s.date = date
-	s.videoDay = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix() / 86400
 	s.videoBatch = 0
 	s.recommendVideos()
 	s.batch = 0
@@ -79,80 +78,24 @@ func (s *studio) recommend() {
 		}
 	}
 	s.signal = s.evidence[focus].example
-	previous := make(map[string]bool, len(s.mix))
-	for _, t := range s.mix {
-		previous[t.Source] = true
+	if s.remoteResults != nil {
+		s.requestRemote("每日精选", s.batch > 0)
+		return
 	}
-	counts := map[string]int{}
+
+	var pool []track
 	for _, t := range s.catalog {
-		counts[t.Group]++
-	}
-	type candidate struct {
-		track track
-		rank  float64
-		seen  bool
-	}
-	candidates := make([]candidate, 0, len(s.catalog))
-	for _, t := range s.catalog {
-		if t.Release == "" || t.Format == youtube {
-			continue
-		}
-		weight := (1 + math.Log1p(s.evidence[t.Group].strength)) / float64(counts[t.Group])
-		if t.Group == focus {
-			weight *= 2.5
-		}
-		candidates = append(candidates, candidate{t, sampleRank(seed, t.Source, weight), previous[t.Source]})
-	}
-	sort.SliceStable(candidates, func(i, j int) bool {
-		a, b := candidates[i], candidates[j]
-		if a.seen != b.seen {
-			return !a.seen
-		}
-		return a.rank < b.rank
-	})
-	s.mix = nil
-	selected := map[string]bool{}
-	// Lead with up to four newly suggested recordings in the effective UI language.
-	// Reserve half the small language pool for the next batch.
-	matches := 0
-	for _, p := range candidates {
-		if p.track.Language == s.mixLanguage {
-			matches++
+		if t.Release != "" && t.Format != youtube {
+			pool = append(pool, t)
 		}
 	}
-	lead := min(4, (matches+1)/2)
-	for _, p := range candidates {
-		if len(s.mix) >= lead {
-			break
-		}
-		if !p.seen && p.track.Language == s.mixLanguage {
-			s.mix = append(s.mix, p.track)
-			selected[p.track.Source] = true
-		}
-	}
-	// Fill with other languages first, keeping unseen tracks ahead of repeats.
-	sort.SliceStable(candidates, func(i, j int) bool {
-		a, b := candidates[i], candidates[j]
-		if a.seen != b.seen {
-			return !a.seen
-		}
-		return a.track.Language != s.mixLanguage && b.track.Language == s.mixLanguage
-	})
-	for _, p := range candidates {
-		if len(s.mix) >= 12 {
-			break
-		}
-		if !selected[p.track.Source] {
-			s.mix = append(s.mix, p.track)
-		}
-	}
+	s.mix = s.cachedMix("每日精选", s.batch > 0, pool)
 }
 
 func (s *studio) recommendGenre(genre string) {
-	seed := fmt.Sprintf("%s/%s/%d", s.date, genre, s.genreBatch[genre])
-	seen := map[string]bool{}
-	for _, t := range s.genreMix[genre] {
-		seen[t.Source] = true
+	if s.remoteResults != nil {
+		s.requestRemote(genre, s.genreBatch[genre] > 0)
+		return
 	}
 	var pool []track
 	for _, t := range s.catalog {
@@ -160,33 +103,31 @@ func (s *studio) recommendGenre(genre string) {
 			pool = append(pool, t)
 		}
 	}
-	sort.SliceStable(pool, func(i, j int) bool {
-		a, b := pool[i], pool[j]
-		if seen[a.Source] != seen[b.Source] {
-			return !seen[a.Source]
-		}
-		return sampleRank(seed, a.Source, 1+math.Log1p(s.evidence[a.Group].strength)) < sampleRank(seed, b.Source, 1+math.Log1p(s.evidence[b.Group].strength))
-	})
-	s.genreMix[genre] = pool[:min(12, len(pool))]
+	s.genreMix[genre] = s.cachedMix(genre, s.genreBatch[genre] > 0, pool)
 }
 
-// Alternate two disjoint pools by civil date and batch so a fresh launch
-// produces the same daily picks without storing the previous day's list.
 func (s *studio) recommendVideos() {
-	seed := fmt.Sprintf("youtube/%s/%d", s.date, s.videoBatch)
-	pool := make([]track, 0, len(videoCatalog)/2)
-	ranks := make(map[string]float64, len(videoCatalog)/2)
-	for i, song := range videoCatalog {
-		if (int64(i)+s.videoDay+int64(s.videoBatch))%2 != 0 {
-			continue
-		}
-		weight := 1 + math.Log1p(s.evidence[song.Group].strength)
-		if song.Language == s.mixLanguage {
-			weight *= 2
-		}
-		ranks[song.Source] = sampleRank(seed, song.Source, weight)
-		pool = append(pool, song)
+	if s.remoteResults != nil {
+		s.requestRemote(youtube, s.videoBatch > 0)
+		return
 	}
-	sort.SliceStable(pool, func(i, j int) bool { return ranks[pool[i].Source] < ranks[pool[j].Source] })
-	s.videoMix = pool[:min(12, len(pool))]
+	s.videoMix = s.cachedMix(youtube, s.videoBatch > 0, videoCatalog)
+}
+
+func (s *studio) cachedMix(channel string, refresh bool, pool []track) []track {
+	now := s.recommendationTime
+	if refresh {
+		now = time.Now()
+	}
+	cacheChannel := channel
+	if s.remoteResults != nil {
+		cacheChannel = "remote-v1/" + channel
+	}
+	rows, err := cachedRecommendations(s.recommendationPath, s.date, cacheChannel, s.mixLanguage, now, refresh, pool, s.evidence)
+	if err != nil {
+		s.recommendationErrors[channel] = err.Error()
+		return nil
+	}
+	delete(s.recommendationErrors, channel)
+	return rows
 }

@@ -10,11 +10,9 @@
   "invalidVideo": "Enter a valid YouTube song or video link.",
   "videoControls": "Use the YouTube controls in Now Playing.",
   "videoPlayer": "Open YouTube player",
-
   "settings": "Settings",
   "appearance": "Appearance",
   "done": "Done",
-
   "@@locale": "en",
   "daily": "Daily Mix",
   "allMusic": "All Music",
@@ -94,5 +92,8 @@
   "readComments": "Read comments",
   "noComments": "No archived comments for this discussion.",
   "moreComments": "More comments",
-  "nowPlaying": "Now Playing"
+  "nowPlaying": "Now Playing",
+  "recommendationExhausted": "You have seen all available picks in the last 7 days. Check back for new songs or after the cooldown.",
+  "recommendationFailure": "Recommendation cache is unavailable: {error}",
+  "remoteLoading": "Finding songs from free music services…"
 }

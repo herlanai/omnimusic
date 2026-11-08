@@ -46,6 +46,9 @@ func (s *studio) commentsPage(c *ui.Context, height float32) {
 	})
 }
 func (s *studio) stopIfClosed() {
+	if s.remoteCancel != nil {
+		s.remoteCancel()
+	}
 	if s.cancel != nil {
 		s.cancel()
 	}

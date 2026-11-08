@@ -20,14 +20,14 @@ const preludeDigest = "8ef0e32ed0fa70b0d07642c467e7b886146a7ef0"
 const badSignDigest = "e358bbe3721525f153ed6f2baaa750676b1c4dc1"
 
 func openTrack(ctx context.Context, t track, progress *transferProgress) (io.ReadSeekCloser, error) {
-	if t.Digest == "" {
+	if t.Digest == "" && !t.Remote {
 		return os.Open(t.Source)
 	}
 	var asset string
-	switch t.Digest {
-	case preludeDigest:
+	switch {
+	case !t.Remote && t.Digest == preludeDigest:
 		asset = "assets/prelude.flac"
-	case badSignDigest:
+	case !t.Remote && t.Digest == badSignDigest:
 		asset = "assets/bad-sign.mp3"
 	}
 	if asset != "" {
@@ -44,6 +44,9 @@ func openTrack(ctx context.Context, t track, progress *transferProgress) (io.Rea
 	dir = filepath.Join(dir, "OmniMusic", "audio")
 	if err = os.MkdirAll(dir, 0700); err != nil {
 		return nil, err
+	}
+	if t.StreamOnly {
+		return openOnline(ctx, t, progress, "")
 	}
 	path := filepath.Join(dir, t.Digest+"."+strings.ToLower(t.Format))
 	if f, e := os.Open(path); e == nil {
@@ -71,6 +74,12 @@ func openOnline(ctx context.Context, t track, progress *transferProgress, path s
 		resp.Body.Close()
 		cancel()
 		return nil, errors.New(locales.SourceStatus(resp.StatusCode))
+	}
+	if t.StreamOnly {
+		t.Size = resp.ContentLength
+		if t.Size <= 0 {
+			t.Size = -1
+		}
 	}
 	stream, e := beginTransfer(resp.Body, t, path, progress, cancel)
 	if e != nil {
@@ -136,7 +145,7 @@ func (s *studio) start(t track) {
 			if e != nil {
 				f.Close()
 			}
-			if t.Digest == "" {
+			if t.Digest == "" && !t.Remote {
 				lines = lyrics(t.Source)
 			}
 		}
@@ -224,6 +233,9 @@ func (s *studio) resumePlayback() {
 }
 
 func (s *studio) toggle() {
+	if s.current.Source == "" {
+		return
+	}
 	if s.loading {
 		if s.cancel != nil {
 			s.cancel()

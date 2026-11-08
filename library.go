@@ -19,6 +19,7 @@ import (
 var assets embed.FS
 
 type track struct {
+	Remote, StreamOnly                                     bool
 	Title, Artist, Composer, Group, Format, Source, Digest string
 	Language, Album, Release, License                      string
 	Seconds                                                float64
@@ -107,7 +108,7 @@ func (s *studio) recordPlay(source string) {
 		return
 	}
 	// A local track may have been removed while its file was opening.
-	if youtubeURL(source) == "" && s.current.Digest == "" && !slices.ContainsFunc(s.Local, func(t track) bool { return t.Source == source }) {
+	if youtubeURL(source) == "" && !s.current.Remote && s.current.Digest == "" && !slices.ContainsFunc(s.Local, func(t track) bool { return t.Source == source }) {
 		return
 	}
 	s.Recent = slices.DeleteFunc(s.Recent, func(id string) bool { return id == source })
@@ -154,10 +155,13 @@ func (s *studio) list() []track {
 	var out []track
 	q := strings.ToLower(strings.TrimSpace(s.query))
 	for _, t := range base {
+		if t.Format == youtube && s.page != youtube && s.page != recentPage {
+			continue
+		}
 		if s.page == "我的收藏" && !s.Likes[t.Source] {
 			continue
 		}
-		if s.page == "现代流行" && t.Release == "" {
+		if s.page == "现代流行" && (t.Release == "" || t.Group == "钢琴" || t.Group == "纯音乐") {
 			continue
 		}
 		if !strings.Contains(strings.ToLower(t.Title+t.Composer+t.artistLabel()+t.Group+topicName(t.Group)), q) {

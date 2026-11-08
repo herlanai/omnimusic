@@ -968,3 +968,35 @@ func NowPlaying() string { return In(i18n.Locale()).NowPlaying() }
 func (msgs Messages) NowPlaying() string {
 	return Catalog.Format(msgs.locale, "nowPlaying", nil)
 }
+
+// RecommendationExhausted says "最近 7 天内的推荐已看完。新曲目可用或冷却期结束后再来看看。"
+// in the language the app shows.
+func RecommendationExhausted() string { return In(i18n.Locale()).RecommendationExhausted() }
+
+// RecommendationExhausted says "最近 7 天内的推荐已看完。新曲目可用或冷却期结束后再来看看。"
+// in the language of msgs.
+func (msgs Messages) RecommendationExhausted() string {
+	return Catalog.Format(msgs.locale, "recommendationExhausted", nil)
+}
+
+// RecommendationFailure says "推荐缓存暂时无法使用：{error}"
+// in the language the app shows.
+func RecommendationFailure(error string) string {
+	return In(i18n.Locale()).RecommendationFailure(error)
+}
+
+// RecommendationFailure says "推荐缓存暂时无法使用：{error}"
+// in the language of msgs.
+func (msgs Messages) RecommendationFailure(error string) string {
+	return Catalog.Format(msgs.locale, "recommendationFailure", map[string]any{"error": error})
+}
+
+// RemoteLoading says "正在从免费音乐服务获取歌曲…"
+// in the language the app shows.
+func RemoteLoading() string { return In(i18n.Locale()).RemoteLoading() }
+
+// RemoteLoading says "正在从免费音乐服务获取歌曲…"
+// in the language of msgs.
+func (msgs Messages) RemoteLoading() string {
+	return Catalog.Format(msgs.locale, "remoteLoading", nil)
+}

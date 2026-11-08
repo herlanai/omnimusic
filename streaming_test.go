@@ -176,3 +176,25 @@ func TestStartupComparison(t *testing.T) {
 	elapsed := time.Since(start)
 	t.Logf("%s: complete-file %v, first PCM %v, %.1fx; %d/%d bytes arrived", mode, baseline, elapsed, float64(baseline)/float64(elapsed), progress.bytes.Load(), song.Size)
 }
+
+func TestUnknownLengthTemporaryStream(t *testing.T) {
+	data := []byte("temporary audio bytes")
+	stream, err := beginTransfer(io.NopCloser(bytes.NewReader(data)), track{Size: -1, StreamOnly: true}, "", new(transferProgress), func() {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := stream.file.Name()
+	got, err := io.ReadAll(stream)
+	if err != nil || !bytes.Equal(got, data) {
+		t.Fatalf("unknown-length stream: %q %v", got, err)
+	}
+	if pos, err := stream.Seek(-5, io.SeekEnd); err != nil || pos != int64(len(data)-5) {
+		t.Fatalf("seek: %d %v", pos, err)
+	}
+	if err := stream.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(name); !os.IsNotExist(err) {
+		t.Fatal("temporary audio retained after close")
+	}
+}

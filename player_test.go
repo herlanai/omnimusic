@@ -17,7 +17,7 @@ import (
 
 func bundledPrelude(t *testing.T) track {
 	t.Helper()
-	for _, tr := range newStudio().catalog {
+	for _, tr := range newTestStudio(t).catalog {
 		if tr.Digest == preludeDigest {
 			return tr
 		}
@@ -46,7 +46,7 @@ func TestOfflineRecording(t *testing.T) {
 	}
 }
 func TestDailyAndLibraryViews(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	s.Light = false
 	day := time.Date(2026, 11, 7, 12, 0, 0, 0, time.UTC)
 	s.daily(day)
@@ -84,7 +84,7 @@ func TestTimedLyricsInCompactWindow(t *testing.T) {
 	if len(lines) != 3 || lines[0].text != "前奏" || lines[2].at != 6.5 {
 		t.Fatalf("unexpected cues: %+v", lines)
 	}
-	s := newStudio()
+	s := newTestStudio(t)
 	s.Light = true
 	s.current = track{Title: "Song", Artist: "本地文件", Format: "WAV"}
 	s.lines = []lyric{{0, "当前歌词"}}
@@ -105,7 +105,7 @@ func TestTimedLyricsInCompactWindow(t *testing.T) {
 }
 
 func TestSwitchRecommendations(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	v := ui.NewTester(s.view, 1240, 790)
 	before := map[string]bool{}
 	for _, track := range s.mix {
@@ -130,7 +130,7 @@ func TestSwitchRecommendations(t *testing.T) {
 }
 
 func TestPopDiscoveryAndGlassThemes(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	for _, track := range s.mix {
 		if track.Format == youtube {
 			if youtubeURL(track.Source) == "" {
@@ -188,7 +188,7 @@ func TestPopDiscoveryAndGlassThemes(t *testing.T) {
 }
 
 func TestBilingualPlayerView(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	previous := s.current
 	for _, language := range []string{"zh-Hans", "en"} {
 		t.Setenv("GOLET_LOCALE", language)
@@ -238,7 +238,7 @@ func TestBilingualPlayerView(t *testing.T) {
 }
 
 func TestInAppCommentsAndImmersiveLyrics(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	view := ui.NewTester(s.view, 1240, 790)
 	if err := view.Click(locales.ReadComments()); err != nil {
 		t.Fatal(err)
@@ -281,7 +281,7 @@ func TestInAppCommentsAndImmersiveLyrics(t *testing.T) {
 }
 
 func TestListClickStaysInLibrary(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	song := track{Title: "List selection", Source: t.TempDir() + "/selection.wav", Format: "WAV"}
 	s.Local = []track{song}
 	s.page = "本地音乐"
@@ -303,7 +303,7 @@ func TestListClickStaysInLibrary(t *testing.T) {
 }
 
 func TestReturnFromListeningPage(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	s.page = "我的收藏"
 	s.query = "music"
 	current, serial := s.current, s.serial
@@ -342,7 +342,7 @@ func TestReturnFromListeningPage(t *testing.T) {
 }
 
 func TestSyncedLyricsMoveWithPlayback(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	s.lines = []lyric{{0, "First cue"}, {2, "Second cue"}, {4, "Third cue"}}
 	pos := 0.
 	view := ui.NewTester(func(c *ui.Context) {
@@ -375,7 +375,7 @@ func TestSyncedLyricsMoveWithPlayback(t *testing.T) {
 }
 
 func TestYouTubeDiscovery(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	v := ui.NewTester(s.view, 820, 610)
 	if err := v.Click("YouTube Music"); err != nil {
 		t.Fatal(err)
@@ -422,14 +422,14 @@ func TestYouTubeDiscovery(t *testing.T) {
 	if err := v.Click(locales.Refresh()); err != nil {
 		t.Fatal(err)
 	}
-	assertFresh := func(rows []track) {
+	assertFresh := func(rows []track, count int) {
 		t.Helper()
 		seen := map[string]bool{}
 		for _, song := range first {
 			seen[song.Source] = true
 		}
-		if len(rows) != 12 {
-			t.Fatalf("got %d videos", len(rows))
+		if len(rows) != count {
+			t.Fatalf("got %d videos, wanted %d", len(rows), count)
 		}
 		for _, song := range rows {
 			if seen[song.Source] {
@@ -438,9 +438,10 @@ func TestYouTubeDiscovery(t *testing.T) {
 			seen[song.Source] = true
 		}
 	}
-	assertFresh(s.list())
+	assertFresh(s.list(), 12)
+	first = append(first, s.list()...)
 	s.daily(time.Now().AddDate(0, 0, 1))
-	assertFresh(s.list())
+	assertFresh(s.list(), 4)
 	for _, page := range []string{"全部音乐", "每日精选", "现代流行", "我的收藏", "钢琴", "纯音乐"} {
 		s.page = page
 		for _, tr := range s.list() {
@@ -451,6 +452,7 @@ func TestYouTubeDiscovery(t *testing.T) {
 	}
 	for _, lang := range []string{"en", "zh-Hans"} {
 		t.Setenv("GOLET_LOCALE", lang)
+		s = newTestStudio(t)
 		s.daily(time.Now())
 		if s.mix[0].Language != lang[:2] {
 			t.Fatal("language preference ignored", lang, s.mix[0])
@@ -478,7 +480,7 @@ func TestRemoveLocalFromList(t *testing.T) {
 	if err := os.WriteFile(item.Source, []byte("original"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	s := newStudio()
+	s := newTestStudio(t)
 	s.page = "本地音乐"
 	s.Local = []track{item}
 	s.queue = []track{item, s.current}
@@ -490,7 +492,7 @@ func TestRemoveLocalFromList(t *testing.T) {
 	if s.loading || len(s.queue) != 1 || !view.HasText(locales.ImportHint()) {
 		t.Fatal("remove should clear the row without starting playback")
 	}
-	reopened := newStudio()
+	reopened := newTestStudio(t)
 	if len(reopened.Local) != 0 || reopened.Likes[item.Source] {
 		t.Fatal("removed track survived in the library")
 	}
@@ -504,13 +506,13 @@ func TestRecentPlaysPersistInPlaybackOrder(t *testing.T) {
 	t.Setenv("HOME", dir)
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("AppData", dir)
-	s := newStudio()
+	s := newTestStudio(t)
 	a, b := s.catalog[0], s.catalog[1]
 	for _, song := range []track{a, b, a} {
 		s.current = song
 		s.recordPlay(song.Source)
 	}
-	reopened := newStudio()
+	reopened := newTestStudio(t)
 	reopened.page = recentPage
 	if rows := reopened.list(); !slices.Equal(rows, []track{a, b}) {
 		t.Fatalf("unexpected recent plays: %v", rows)
@@ -522,7 +524,7 @@ func TestRecentYouTubePlayback(t *testing.T) {
 	t.Setenv("HOME", dir)
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("AppData", dir)
-	s := newStudio()
+	s := newTestStudio(t)
 	native := s.catalog[0]
 	s.current = native
 	s.recordPlay(native.Source)
@@ -538,7 +540,7 @@ func TestRecentYouTubePlayback(t *testing.T) {
 	}
 	s.videoPlaybackTitle("playing:6D79CYTxvOM")
 	s.videoPlaybackTitle("playing:6D79CYTxvOM")
-	reopened := newStudio()
+	reopened := newTestStudio(t)
 	reopened.page = recentPage
 	rows := reopened.list()
 	if !slices.Equal(rows, []track{known, pasted, native}) {

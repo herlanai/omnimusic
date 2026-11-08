@@ -218,6 +218,11 @@ func youtubeTrack(source string) track {
 }
 
 func (s *studio) videoLabels() (string, string) {
+	for _, song := range s.catalog {
+		if song.Source == s.videoSource {
+			return song.Title, song.Artist
+		}
+	}
 	song := youtubeTrack(s.videoSource)
 	return song.Title, song.Artist
 }

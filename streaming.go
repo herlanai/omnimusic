@@ -26,17 +26,22 @@ type streamingFile struct {
 	file                 *os.File
 	size, available, pos int64
 	finished, closed     bool
+	temporary            bool
 	err                  error
 	cancel               context.CancelFunc
 	done                 chan struct{}
 }
 
 func beginTransfer(body io.ReadCloser, t track, path string, progress *transferProgress, cancel context.CancelFunc) (*streamingFile, error) {
-	tmp, e := os.CreateTemp(filepath.Dir(path), "download-*")
+	dir := filepath.Dir(path)
+	if t.StreamOnly {
+		dir = ""
+	}
+	tmp, e := os.CreateTemp(dir, "omnimusic-stream-*")
 	if e != nil {
 		return nil, e
 	}
-	s := &streamingFile{file: tmp, size: t.Size, cancel: cancel, done: make(chan struct{})}
+	s := &streamingFile{temporary: t.StreamOnly, file: tmp, size: t.Size, cancel: cancel, done: make(chan struct{})}
 	s.changed = sync.NewCond(&s.mu)
 	go s.download(body, t, path, progress)
 	return s, nil
@@ -51,7 +56,7 @@ func (s *streamingFile) download(body io.ReadCloser, t track, path string, progr
 	for {
 		n, readErr := body.Read(buffer)
 		if n > 0 {
-			if int64(n) > s.size-offset {
+			if s.size >= 0 && int64(n) > s.size-offset {
 				err = errors.New(locales.LengthMismatch())
 				break
 			}
@@ -73,12 +78,18 @@ func (s *streamingFile) download(body io.ReadCloser, t track, path string, progr
 			break
 		}
 	}
-	if err == nil && (offset != t.Size || encodinghex.EncodeToString(hash.Sum(nil)) != t.Digest) {
+	if err == nil && ((t.Size >= 0 && offset != t.Size) || (t.Digest != "" && encodinghex.EncodeToString(hash.Sum(nil)) != t.Digest)) {
 		err = errors.New(locales.Checksum())
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	tempName := s.file.Name()
+	if t.StreamOnly && err == nil {
+		s.size = offset
+		s.finished = true
+		s.changed.Broadcast()
+		return
+	}
 	// Close before renaming so the same finalization also works on Windows.
 	if closeErr := s.file.Close(); err == nil {
 		err = closeErr
@@ -135,6 +146,15 @@ func (s *streamingFile) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekCurrent:
 		offset += s.pos
 	case io.SeekEnd:
+		for s.size < 0 && !s.finished && !s.closed {
+			s.changed.Wait()
+		}
+		if s.closed {
+			return 0, os.ErrClosed
+		}
+		if s.err != nil {
+			return 0, s.err
+		}
 		offset += s.size
 	default:
 		return 0, errors.New(locales.InvalidSeek())
@@ -160,6 +180,9 @@ func (s *streamingFile) Close() error {
 	defer s.mu.Unlock()
 	if s.file != nil && s.err == nil {
 		_ = s.file.Close()
+		if s.temporary {
+			os.Remove(s.file.Name())
+		}
 	}
 	return nil
 }

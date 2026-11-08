@@ -9,7 +9,7 @@ import (
 )
 
 func TestSettingsGlyphCentered(t *testing.T) {
-	s := newStudio()
+	s := newTestStudio(t)
 	for _, light := range []bool{false, true} {
 		s.Light = light
 		for _, width := range []int{820, 1240} {
@@ -44,7 +44,7 @@ func TestGlassSettingPersists(t *testing.T) {
 	t.Setenv("HOME", dir)
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("AppData", dir)
-	s := newStudio()
+	s := newTestStudio(t)
 	if !s.FrostedGlass {
 		t.Fatal("glass should default to enabled")
 	}
@@ -54,7 +54,7 @@ func TestGlassSettingPersists(t *testing.T) {
 	if err := v.Click(locales.ToggleGlass()); err != nil {
 		t.Fatal(err)
 	}
-	if s.FrostedGlass || newStudio().FrostedGlass {
+	if s.FrostedGlass || newTestStudio(t).FrostedGlass {
 		t.Fatal("glass switch did not persist")
 	}
 }

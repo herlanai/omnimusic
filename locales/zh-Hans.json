@@ -10,11 +10,9 @@
   "invalidVideo": "请输入有效的 YouTube 歌曲或视频链接。",
   "videoControls": "在播放页中使用 YouTube 播放控件。",
   "videoPlayer": "打开 YouTube 播放器",
-
   "settings": "设置",
   "appearance": "外观",
   "done": "完成",
-
   "@@locale": "zh-Hans",
   "daily": "每日精选",
   "allMusic": "全部音乐",
@@ -131,5 +129,8 @@
   "readComments": "查看评论",
   "noComments": "这段讨论暂无已收录的评论。",
   "moreComments": "更多评论",
-  "nowPlaying": "正在播放"
+  "nowPlaying": "正在播放",
+  "recommendationExhausted": "最近 7 天内的推荐已看完。新曲目可用或冷却期结束后再来看看。",
+  "recommendationFailure": "推荐缓存暂时无法使用：{error}",
+  "remoteLoading": "正在从免费音乐服务获取歌曲…"
 }

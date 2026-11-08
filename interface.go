@@ -13,17 +13,27 @@ import (
 	"math"
 	"omnimusic/locales"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 )
 
 type studio struct {
+	remotePools                              map[string][]track
+	remotePending                            map[string]bool
+	remoteWorkers                            map[string]int
+	remoteResults                            chan remoteResult
+	remoteContext                            context.Context
+	remoteCancel                             context.CancelFunc
+	remoteLoading                            map[string]bool
+	recommendationPath                       string
+	recommendationErrors                     map[string]string
+	recommendationTime                       time.Time
 	videoView                                *golet.WebView
 	videoLink, videoSource, mixLanguage      string
 	videoError                               string
 	videoMix                                 []track
 	videoBatch                               int
-	videoDay                                 int64
 	invalidVideo, miniVideo, videoFromRecent bool
 	videoAudibleSince                        time.Time
 	settingsOpen                             bool
@@ -60,7 +70,17 @@ type studio struct {
 }
 
 func newStudio() *studio {
-	s := &studio{settings: settings{Light: true, FrostedGlass: true}, lyricResults: make(chan lyricResult, 4), page: "每日精选", volume: .8, ready: make(chan loaded, 4), ends: make(chan int, 4), images: map[string]*ui.Bitmap{}}
+	p, err := dataPath()
+	if err != nil {
+		// An invalid configuration path is reported by the recommendation view.
+		return newStudioWithRemote("", true)
+	}
+	return newStudioWithRemote(filepath.Join(filepath.Dir(p), "recommendations.sqlite"), true)
+}
+
+func newStudioWithCache(path string) *studio { return newStudioWithRemote(path, false) }
+func newStudioWithRemote(path string, remote bool) *studio {
+	s := &studio{recommendationPath: path, recommendationErrors: map[string]string{}, settings: settings{Light: true, FrostedGlass: true}, lyricResults: make(chan lyricResult, 4), page: "每日精选", volume: .8, ready: make(chan loaded, 4), ends: make(chan int, 4), images: map[string]*ui.Bitmap{}}
 	for name, dst := range map[string]any{"catalog.json": &s.catalog, "signals.json": &s.signals, "pop.json": &s.pop, "comments.json": &s.comments} {
 		if e := json.Unmarshal(readAsset(name), dst); e != nil {
 			panic(e)
@@ -83,12 +103,26 @@ func newStudio() *studio {
 		s.images[n] = b
 	}
 	s.evidence = summarize(s.signals)
+	if remote {
+		s.remoteContext, s.remoteCancel = context.WithCancel(context.Background())
+		s.remoteResults = make(chan remoteResult, 8)
+		s.remoteLoading = map[string]bool{}
+		s.remotePools = map[string][]track{}
+		s.remotePending = map[string]bool{}
+		s.remoteWorkers = map[string]int{}
+		s.catalog = nil
+		s.restoreRemoteCatalog()
+		s.restoreRemoteInventory()
+	}
 	s.daily(time.Now())
 	for _, t := range s.catalog {
 		if t.Digest == badSignDigest {
 			s.current = t
 			break
 		}
+	}
+	if s.current.Source == "" && len(s.mix) > 0 {
+		s.current = s.mix[0]
 	}
 	s.lyricsStatus = "播放后载入歌词"
 	s.queue = []track{s.current}
@@ -260,10 +294,20 @@ func (s *studio) nav(c *ui.Context, name, glyph string) {
 		s.lyricsOpen = false
 		s.page = name
 		s.query = ""
+		if s.remoteResults != nil && (name == youtube || name == "每日精选" || name == "钢琴" || name == "纯音乐") {
+			s.requestRemote(name, false)
+		}
 	}
 }
 func (s *studio) prepareFrame(c *ui.Context) {
 	s.poll()
+	s.pollRemote()
+	for _, loading := range s.remoteLoading {
+		if loading {
+			c.After(100 * time.Millisecond)
+			break
+		}
+	}
 	theme := darkGlass
 	if s.Light {
 		theme = lightGlass
@@ -527,8 +571,27 @@ func (s *studio) tracks(c *ui.Context, rows []track, height float32) {
 				}
 			}
 		})
+		if len(rows) > 0 && s.remotePending[s.page] {
+			status := locales.RemoteLoading()
+			if !s.remoteLoading[s.page] {
+				status = locales.RecommendationExhausted()
+				if s.recommendationErrors[s.page] != "" {
+					status = locales.RecommendationFailure(s.recommendationErrors[s.page])
+				}
+			}
+			txt(c, status, 12, t.TextMuted).MaxLines(2)
+		}
 		if len(rows) == 0 {
 			msg := locales.NoMatches()
+			if s.query == "" && (s.page == youtube || s.page == "每日精选" || s.page == "钢琴" || s.page == "纯音乐") {
+				msg = locales.RecommendationExhausted()
+				if s.remoteLoading[s.page] {
+					msg = locales.RemoteLoading()
+				}
+				if s.recommendationErrors[s.page] != "" {
+					msg = locales.RecommendationFailure(s.recommendationErrors[s.page])
+				}
+			}
 			if s.query == "" && s.page == "本地音乐" {
 				msg = locales.ImportHint()
 			} else if s.query == "" && s.page == "我的收藏" {
@@ -619,7 +682,7 @@ func (s *studio) inspector(c *ui.Context) {
 			if ui.Button(c, locales.ReadComments()).Clicked() {
 				s.showComments()
 			}
-			if s.current.Digest != "" {
+			if s.current.Digest != "" || s.current.Remote {
 				label, link := locales.Musopen(), "https://archive.org/details/MusopenCollectionAsFlac"
 				if s.current.Release != "" {
 					label = locales.License()
@@ -646,7 +709,7 @@ func (s *studio) lyricView(c *ui.Context) {
 			msg = locales.FullLyrics()
 		}
 	}
-	if s.current.Digest == "" {
+	if s.current.Digest == "" && !s.current.Remote {
 		msg = locales.LocalLyrics()
 	}
 	for _, l := range s.lines {
