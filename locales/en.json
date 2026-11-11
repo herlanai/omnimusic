@@ -95,5 +95,12 @@
   "nowPlaying": "Now Playing",
   "recommendationExhausted": "You have seen all available picks in the last 7 days. Check back for new songs or after the cooldown.",
   "recommendationFailure": "Recommendation cache is unavailable: {error}",
-  "remoteLoading": "Finding songs from free music services…"
+  "remoteLoading": "Finding songs from free music services…",
+  "trayOpen": "Open OmniMusic",
+  "trayQuit": "Quit OmniMusic",
+  "trayIdle": "No music playing",
+  "trayPause": "Pause",
+  "trayPlay": "Play",
+  "trayPrevious": "Previous track",
+  "trayNext": "Next track"
 }

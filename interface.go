@@ -19,6 +19,9 @@ import (
 )
 
 type studio struct {
+	tray                                     *golet.Tray
+	trayState                                string
+	quitting                                 bool
 	remotePools                              map[string][]track
 	remotePending                            map[string]bool
 	remoteWorkers                            map[string]int

@@ -1000,3 +1000,73 @@ func RemoteLoading() string { return In(i18n.Locale()).RemoteLoading() }
 func (msgs Messages) RemoteLoading() string {
 	return Catalog.Format(msgs.locale, "remoteLoading", nil)
 }
+
+// TrayOpen says "打开 OmniMusic"
+// in the language the app shows.
+func TrayOpen() string { return In(i18n.Locale()).TrayOpen() }
+
+// TrayOpen says "打开 OmniMusic"
+// in the language of msgs.
+func (msgs Messages) TrayOpen() string {
+	return Catalog.Format(msgs.locale, "trayOpen", nil)
+}
+
+// TrayQuit says "退出 OmniMusic"
+// in the language the app shows.
+func TrayQuit() string { return In(i18n.Locale()).TrayQuit() }
+
+// TrayQuit says "退出 OmniMusic"
+// in the language of msgs.
+func (msgs Messages) TrayQuit() string {
+	return Catalog.Format(msgs.locale, "trayQuit", nil)
+}
+
+// TrayIdle says "暂无正在播放的音乐"
+// in the language the app shows.
+func TrayIdle() string { return In(i18n.Locale()).TrayIdle() }
+
+// TrayIdle says "暂无正在播放的音乐"
+// in the language of msgs.
+func (msgs Messages) TrayIdle() string {
+	return Catalog.Format(msgs.locale, "trayIdle", nil)
+}
+
+// TrayPause says "暂停"
+// in the language the app shows.
+func TrayPause() string { return In(i18n.Locale()).TrayPause() }
+
+// TrayPause says "暂停"
+// in the language of msgs.
+func (msgs Messages) TrayPause() string {
+	return Catalog.Format(msgs.locale, "trayPause", nil)
+}
+
+// TrayPlay says "播放"
+// in the language the app shows.
+func TrayPlay() string { return In(i18n.Locale()).TrayPlay() }
+
+// TrayPlay says "播放"
+// in the language of msgs.
+func (msgs Messages) TrayPlay() string {
+	return Catalog.Format(msgs.locale, "trayPlay", nil)
+}
+
+// TrayPrevious says "上一首"
+// in the language the app shows.
+func TrayPrevious() string { return In(i18n.Locale()).TrayPrevious() }
+
+// TrayPrevious says "上一首"
+// in the language of msgs.
+func (msgs Messages) TrayPrevious() string {
+	return Catalog.Format(msgs.locale, "trayPrevious", nil)
+}
+
+// TrayNext says "下一首"
+// in the language the app shows.
+func TrayNext() string { return In(i18n.Locale()).TrayNext() }
+
+// TrayNext says "下一首"
+// in the language of msgs.
+func (msgs Messages) TrayNext() string {
+	return Catalog.Format(msgs.locale, "trayNext", nil)
+}

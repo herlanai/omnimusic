@@ -20,9 +20,21 @@ func main() {
 		w := golet.NewWindow(golet.WindowOptions{Title: "OmniMusic", TitleBarStyle: golet.TitleBarHiddenInset, Vibrancy: s.windowMaterial(), Width: 1240, Height: 790, MinWidth: 820, MinHeight: 610, Content: ui.View(s.view)})
 		s.window = w
 		s.applyAppearance()
+		if err := s.initTray(); err != nil {
+			log.Printf("system tray unavailable: %v", err)
+		}
+		w.OnClose(func(e *golet.CloseEvent) {
+			if s.tray != nil && !s.quitting {
+				e.PreventDefault()
+				w.Hide()
+				s.updateTray()
+			}
+		})
 		w.OnClosed(func() {
 			s.window = nil
-			s.stopIfClosed()
+			if s.tray == nil {
+				s.stopIfClosed()
+			}
 		})
 	})
 	if e := golet.App.Run(); e != nil {

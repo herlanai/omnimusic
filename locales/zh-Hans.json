@@ -132,5 +132,12 @@
   "nowPlaying": "正在播放",
   "recommendationExhausted": "最近 7 天内的推荐已看完。新曲目可用或冷却期结束后再来看看。",
   "recommendationFailure": "推荐缓存暂时无法使用：{error}",
-  "remoteLoading": "正在从免费音乐服务获取歌曲…"
+  "remoteLoading": "正在从免费音乐服务获取歌曲…",
+  "trayOpen": "打开 OmniMusic",
+  "trayQuit": "退出 OmniMusic",
+  "trayIdle": "暂无正在播放的音乐",
+  "trayPause": "暂停",
+  "trayPlay": "播放",
+  "trayPrevious": "上一首",
+  "trayNext": "下一首"
 }
